@@ -1,7 +1,7 @@
 'use strict'
 
 const handler = (payload, context, callback) => {
-    console.log(`Function apiHandler called with payload ${JSON.stringify(payload)}`);
+    console.log(`Function handler called with payload ${JSON.stringify(payload)}`);
     callback(null, {
         statusCode: 200,
         body: JSON.stringify({
