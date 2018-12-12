@@ -5,7 +5,7 @@ const handler = (payload, context, callback) => {
     callback(null, {
         statusCode: 200,
         body: JSON.stringify({
-            message: 'Pepe approves this Demo!'
+            message: 'Hello from Lambda!'
         }),
         headers: {
             'X-Custom-Header': 'ASDF'
