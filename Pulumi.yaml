@@ -1,0 +1,3 @@
+name: localstack-demo
+description: Example project for deploying aws serverless lambda to localstack
+runtime: nodejs

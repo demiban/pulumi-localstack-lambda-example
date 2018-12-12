@@ -1,0 +1,31 @@
+{
+  "name": "pulumi-localstack",
+  "version": "1.0.0",
+  "description": "Example project for deploying aws serverless lambda to localstack",
+  "main": "index.js",
+  "scripts": {
+    "test": "./deploy.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/demiban/pulumi-localstack-lambda-example.git"
+  },
+  "keywords": [
+    "pulumi",
+    "localstack",
+    "node.js",
+    "aws",
+    "lambda",
+    "test"
+  ],
+  "author": "Demiban Diaz Torres",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/RedVentures/pulumi-localstack-lambda-sample/issues"
+  },
+  "homepage": "https://github.com/RedVentures/pulumi-localstack-lambda-sample#readme",
+  "dependencies": {
+    "@pulumi/aws": "^0.16.3",
+    "mime": "^2.4.0"
+  }
+}
