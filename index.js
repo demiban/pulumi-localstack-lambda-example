@@ -117,7 +117,7 @@ const lambda = new aws.lambda.Function( `${config.name}-lambda`, {
 // TODO:    Use this fucntion to deploy the RESTApi once pulumi releases the updated
 //          version that enables to pass the provider has an argument.
 //          This will simplify the implementation.
-// let endpoint = new aws.apigateway.x.API(`${config.name}-api`, {
+// let api = new aws.apigateway.x.API(`${config.name}-api`, {
 //     routes: [{
 //         path: `/${path}`,
 //         method: "GET",
@@ -216,10 +216,10 @@ if (config.stage == "prod") {
 
 let endpoint;
 
-if (config.stage == "prod") {
-    endpoint = deployment.invokeUrl.apply(url => url + `/${path}`);
-} else {
+if (config.stage == "dev") {
     endpoint = restApi.id.promise().then(() => restApi.id.apply(id => `http://localhost:4567/restapis/${id}/${config.stage}/_user_request_/${path}`));
+} else {
+    endpoint = deployment.invokeUrl.apply(url => url + `/${path}`);
 }
 
 exports.endpoint = endpoint;

@@ -6,18 +6,19 @@ Example project for deploying aws serverless lambda to localstack with pulumi.
 #### In the terminal run the following commands:
 
 Install required packages 
-`$ ./setup`  
+`$ make setup`  
 
 Start localStack docker
-`$ ./run_localstack`
+`$ make up`
 
 ### Test the application
 
 ####Deploy
-Run `$ ./ deploy.sh`
+Run `$ make deploy`
 
 output: 
-``Previewing update (localstack-demo-dev):
+````
+Previewing update (localstack-demo-dev):
   
        Type                             Name                                 Plan       
    +   pulumi:pulumi:Stack              localstack-demo-localstack-demo-dev  create     
@@ -58,16 +59,16 @@ output:
   Duration: 15s
   
   Permalink: https://app.pulumi.com/demiban/localstack-demo-dev/updates/1
-``
+````
 
 ### Destroy
 
-Run `$ ./destroy`
+Run `$ make destroy`
 
 ### Configuration
 
 To change the deployment stage open `config/deploy-config.json` and change
-the value of `"stage": "dev"` to `"stage": "prod" to deploy the application
+the value of `"stage": "dev"` to `"stage": "prod"` to deploy the application to
 the cloud.
 
 
