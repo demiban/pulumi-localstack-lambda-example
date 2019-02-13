@@ -10,10 +10,7 @@ const path = "mypath"
 let awsProvider;
 
 // Create the aws provider depending the stage of deployment
-if (config.stage == "prod") {
-    awsProvider = new aws.Provider("aws", { region: config.region });
-}
-else {
+if (config.stage == "dev") {
     awsProvider = new aws.Provider("localstack", {
         skipCredentialsValidation: true,
         skipMetadataApiCheck: true,
@@ -35,6 +32,9 @@ else {
             ssm: "http://localhost:4583"
         }],
     })
+}
+else {
+    awsProvider = new aws.Provider("aws", { region: config.region });
 }
 
 //////////////////////////
