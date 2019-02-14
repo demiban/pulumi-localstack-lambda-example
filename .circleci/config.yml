@@ -7,11 +7,12 @@ jobs:
   build:
     docker:
       - image: 'circleci/node:7.10'
-    working_directory: ~/repo
+    working_directory: ~/repo/
 
     steps:
       - checkout
-      - pulumi/login
+      - pulumi/login:
+          version: 16.0.2
       - run:
           command: |
             npm install
