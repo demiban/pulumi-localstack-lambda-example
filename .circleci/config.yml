@@ -9,6 +9,7 @@ jobs:
     steps:
       - checkout
       - pulumi/login
+      - setup_remote_docker
       - run:
           command: |
             npm install
