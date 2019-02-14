@@ -12,6 +12,8 @@ jobs:
       - run:
           command: |
             npm install
-            npm run build
+            make setup
+            make up
+            make deploy
       - pulumi/update:
           stack: localstack-demo-dev
