@@ -1,4 +1,4 @@
-version: 2.0
+version: 2.1
 orbs:
   pulumi: pulumi/pulumi@1.0.0
 jobs:
