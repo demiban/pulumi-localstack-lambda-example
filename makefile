@@ -47,7 +47,7 @@ destroy:
 	-pulumi stack rm -f -s $(STACK)
 
 up:
-	TMPDIR=/private$(TMPDIR) docker-compose up;
+	TMPDIR=/private$(TMPDIR) docker-compose up -d;
 
 down:
 	TMPDIR=/private$(TMPDIR) docker-compose down;
