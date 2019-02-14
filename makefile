@@ -11,7 +11,7 @@ REGION := $(call GetConf,region)
 STAGE :=$(call GetConf,stage)
 STACK := $(APP_NAME)-$(STAGE)
 
-#all: setup
+all: setup build up
 
 setup:
 	@if not [ "$(hash brew)" 2>/dev/null ]; then \
@@ -28,17 +28,18 @@ setup:
 
 	docker pull localstack/localstack:0.8.8;
 
-deploy:
-	cd $(HANDLER_DIR); \
+	-pulumi stack init $(STACK);
+
+	pulumi config set aws:region $(REGION);
+
+build:
+	@cd $(HANDLER_DIR); \
 	for F in ./*.js; do \
 		var="$${F%.js}"; \
 		zip $$var.zip $$F; \
 	done
 
-	-pulumi stack init $(STACK);
-
-	pulumi config set aws:region $(REGION);
-
+deploy:
 	pulumi up;
 
 destroy:
