@@ -1,18 +1,14 @@
 version: 2.1
-
 orbs:
   pulumi: pulumi/pulumi@1.0.0
-
 jobs:
   build:
     docker:
-      - image: 'circleci/node:7.10'
-    working_directory: ~/repo/
-
+      - image: circleci/node:7.10
+    working_directory: ~/repo
     steps:
       - checkout
-      - pulumi/login:
-          version: 16.0.2
+      - pulumi/login
       - run:
           command: |
             npm install
