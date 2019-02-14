@@ -28,7 +28,7 @@ setup:
 
 	docker pull localstack/localstack:0.8.8;
 
-	-pulumi stack init $(STACK);
+	pulumi stack init $(STACK) || pulumi stack select $(STACK)
 
 	pulumi config set aws:region $(REGION);
 
