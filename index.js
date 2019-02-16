@@ -14,7 +14,9 @@ const NAME = process.env.APP_NAME
 let awsProvider;
 
 // Create the aws provider depending the stage of deployment
-if (STAGE == "dev") {
+if (STAGE == "prod") {
+    awsProvider = new aws.Provider("aws", { region: REGION });
+} else {
     awsProvider = new aws.Provider("localstack", {
         skipCredentialsValidation: true,
         skipMetadataApiCheck: true,
@@ -36,9 +38,6 @@ if (STAGE == "dev") {
             ssm: "http://localhost:4583"
         }],
     })
-}
-else {
-    awsProvider = new aws.Provider("aws", { region: REGION });
 }
 
 //////////////////////////
@@ -220,10 +219,10 @@ if (STAGE == "prod") {
 
 let endpoint;
 
-if (STAGE == "dev") {
-    endpoint = restApi.id.promise().then(() => restApi.id.apply(id => `http://localhost:4567/restapis/${id}/${process.env.STAGE}/_user_request_/${PATH}`));
-} else {
+if (STAGE == "prod") {
     endpoint = deployment.invokeUrl.apply(url => url + `/${PATH}`);
+} else  {
+    endpoint = restApi.id.promise().then(() => restApi.id.apply(id => `http://localhost:4567/restapis/${id}/${process.env.STAGE}/_user_request_/${PATH}`));
 }
 
 exports.endpoint = endpoint;
