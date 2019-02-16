@@ -12,7 +12,6 @@ jobs:
       - setup_remote_docker
       - run:
           command: |
-            npm install
             make all
       - pulumi/update:
-          stack: localstack-demo-dev
+          stack: localstack-demo-'${STAGE}'
