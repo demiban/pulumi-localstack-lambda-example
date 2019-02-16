@@ -42,7 +42,7 @@ deploy:
 destroy:
 	-pulumi destroy -y -s $(STACK)
 
-	-pulumi stack rm -f -s $(STACK)
+	-pulumi stack rm -f -y -s $(STACK)
 
 up:
 	TMPDIR=/private$(TMPDIR) docker-compose up -d;
