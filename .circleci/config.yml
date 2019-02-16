@@ -13,6 +13,6 @@ jobs:
       - setup_remote_docker
       - run:
           command: |
-            make all
             make destroy
+            make all
             make deploy
