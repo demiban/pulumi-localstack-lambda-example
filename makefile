@@ -28,6 +28,7 @@ setup:
 	fi
 
 	@if [ ! -d "node_modules" ]; then \
+		npm config set loglevel warn; \
 		npm install; \
 	fi
 
