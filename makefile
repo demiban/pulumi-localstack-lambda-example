@@ -40,7 +40,7 @@ deploy:
 	pulumi up -y;
 
 destroy:
-	-pulumi destroy -s $(STACK)
+	-pulumi destroy -y -s $(STACK)
 
 	-pulumi stack rm -f -s $(STACK)
 
