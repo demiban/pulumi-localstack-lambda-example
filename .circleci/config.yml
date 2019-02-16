@@ -5,6 +5,7 @@ jobs:
   build:
     docker:
       - image: circleci/node:7.10
+      - image: localstack/localstack:0.8.8
     working_directory: ~/repo
     steps:
       - checkout
