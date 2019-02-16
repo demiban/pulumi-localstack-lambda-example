@@ -4,4 +4,3 @@ Pulumi.*.yaml
 node_modules
 .idea
 .env
-conf.json
