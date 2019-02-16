@@ -37,7 +37,7 @@ build:
 	done
 
 deploy:
-	pulumi up;
+	pulumi up -y;
 
 destroy:
 	-pulumi destroy -s $(STACK)
