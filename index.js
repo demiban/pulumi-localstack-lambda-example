@@ -221,7 +221,7 @@ let endpoint;
 
 if (STAGE == "prod") {
     endpoint = deployment.invokeUrl.apply(url => url + `/${PATH}`);
-} else  {
+} else{
     endpoint = restApi.id.promise().then(() => restApi.id.apply(id => `http://localhost:4567/restapis/${id}/${process.env.STAGE}/_user_request_/${PATH}`));
 }
 
