@@ -26,6 +26,7 @@
   "homepage": "https://github.com/demiban/pulumi-localstack-lambda-example#readme",
   "dependencies": {
     "@pulumi/aws": "^0.16.8",
+    "dotenv": "^6.2.0",
     "mime": "^2.4.0"
   }
 }
