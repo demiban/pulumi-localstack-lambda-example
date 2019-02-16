@@ -1,14 +1,19 @@
 SHELL := /bin/bash
 HANDLER_DIR := handler
-CONF := config/deploy-config.json
+
+$(shell yaml2json Pulumi.yaml > conf.json)
+CONF := conf.json
+
 
 define GetConf
 $(shell node -p "require('./$(CONF)').$(1)")
 endef
 
+ifneq (,$(wildcard ./.env))
+include .env
+endif
+
 APP_NAME := $(call GetConf,name)
-REGION := $(call GetConf,region)
-STAGE :=$(call GetConf,stage)
 STACK := $(APP_NAME)-$(STAGE)
 
 all: setup build up
@@ -23,10 +28,10 @@ setup:
 	fi
 
 	@if [ ! -d "node_modules" ]; then \
-		npm install --save @pulumi/aws mime; \
+		npm install; \
 	fi
 
-	docker pull localstack/localstack:0.8.8;
+	@docker pull localstack/localstack:0.8.8;
 
 	pulumi stack init $(STACK) || pulumi stack select $(STACK)
 
