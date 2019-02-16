@@ -1,8 +1,11 @@
 const pulumi = require("@pulumi/pulumi");
 const aws = require("@pulumi/aws");
-const config = require('./conf.json');
-const path = "mypath"
 require('dotenv').config();
+
+const PATH = "mypath"
+const STAGE = process.env.STAGE
+const REGION = process.env.REGION
+const NAME = process.env.APP_NAME
 
 ////////////////////////
 // Create AWS Provider
@@ -11,14 +14,14 @@ require('dotenv').config();
 let awsProvider;
 
 // Create the aws provider depending the stage of deployment
-if (process.env.STAGE == "dev") {
+if (STAGE == "dev") {
     awsProvider = new aws.Provider("localstack", {
         skipCredentialsValidation: true,
         skipMetadataApiCheck: true,
         s3ForcePathStyle: true,
         accessKey: "mockAccessKey",
         secretKey: "mockSecretKey",
-        region: process.env.REGION,
+        region: REGION,
         endpoints: [{
             apigateway: "http://localhost:4567",
             cloudformation: "http://localhost:4581",
@@ -35,7 +38,7 @@ if (process.env.STAGE == "dev") {
     })
 }
 else {
-    awsProvider = new aws.Provider("aws", { region: process.env.REGION });
+    awsProvider = new aws.Provider("aws", { region: REGION });
 }
 
 //////////////////////////
@@ -60,7 +63,7 @@ const policy = {
 // Create IAM Role
 ////////////////////
 
-const role = new aws.iam.Role(`${config.name}-lambda-role`, {
+const role = new aws.iam.Role(`${NAME}-lambda-role`, {
     assumeRolePolicy: JSON.stringify(policy),
  }, {
  //provider: awsProvider,
@@ -70,7 +73,7 @@ const role = new aws.iam.Role(`${config.name}-lambda-role`, {
 // Create IAM Role Policy
 ///////////////////////////
 
-const fullAccess = new aws.iam.RolePolicyAttachment(`${config.name}-lambda-access`, {
+const fullAccess = new aws.iam.RolePolicyAttachment(`${NAME}-lambda-access`, {
     role: role,
     policyArn: aws.iam.AWSLambdaFullAccess,
 }, {
@@ -81,7 +84,7 @@ const fullAccess = new aws.iam.RolePolicyAttachment(`${config.name}-lambda-acces
 // Create Lambda
 //////////////////
 
-const lambda = new aws.lambda.Function( `${config.name}-lambda`, {
+const lambda = new aws.lambda.Function( `${NAME}-lambda`, {
     runtime: aws.lambda.NodeJS6d10Runtime,
     code: new pulumi.asset.FileArchive("./handler/handler.zip"),
     timeout: 5,
@@ -118,9 +121,9 @@ const lambda = new aws.lambda.Function( `${config.name}-lambda`, {
 // TODO:    Use this fucntion to deploy the RESTApi once pulumi releases the updated
 //          version that enables to pass the provider has an argument.
 //          This will simplify the implementation.
-// let api = new aws.apigateway.x.API(`${config.name}-api`, {
+// let api = new aws.apigateway.x.API(`${NAME}-api`, {
 //     routes: [{
-//         path: `/${path}`,
+//         path: `/${PATH}`,
 //         method: "GET",
 //         eventHandler: lambda
 //     }],
@@ -132,7 +135,7 @@ const lambda = new aws.lambda.Function( `${config.name}-lambda`, {
 // Create APIGATEWAY
 //////////////////////
 
-let restApi = new aws.apigateway.RestApi(`${config.name}-api`, {
+let restApi = new aws.apigateway.RestApi(`${NAME}-api`, {
     body: "",
 }, {
     provider: awsProvider,
@@ -142,9 +145,9 @@ let restApi = new aws.apigateway.RestApi(`${config.name}-api`, {
 // Create RestApi Resource
 ////////////////////////////
 
-const resource = new aws.apigateway.Resource(`${config.name}-api-resource`, {
+const resource = new aws.apigateway.Resource(`${NAME}-api-resource`, {
     restApi: restApi,
-    pathPart: `${path}`,
+    pathPart: `${PATH}`,
     parentId: restApi.rootResourceId,
 }, {
     provider: awsProvider,
@@ -154,7 +157,7 @@ const resource = new aws.apigateway.Resource(`${config.name}-api-resource`, {
 // Create RestAPI Method
 //////////////////////////
 
-const method = new aws.apigateway.Method(`${config.name}-api-method`, {
+const method = new aws.apigateway.Method(`${NAME}-api-method`, {
     restApi: restApi,
     resourceId: resource.id,
     httpMethod: "ANY",
@@ -167,7 +170,7 @@ const method = new aws.apigateway.Method(`${config.name}-api-method`, {
 // Set RestApi Lambda Integration
 ///////////////////////////////////
 
-const integration = new aws.apigateway.Integration(`${config.name}-api-integration`, {
+const integration = new aws.apigateway.Integration(`${NAME}-api-integration`, {
     restApi: restApi,
     resourceId: resource.id,
     httpMethod: "ANY",
@@ -175,7 +178,7 @@ const integration = new aws.apigateway.Integration(`${config.name}-api-integrati
     integrationHttpMethod: "POST",
     passthroughBehavior: "WHEN_NO_MATCH",
     uri: lambda.arn.apply(arn =>
-        arn && `arn:aws:apigateway:${process.env.REGION}:lambda:path/2015-03-31/functions/${arn}/invocations`),
+        arn && `arn:aws:apigateway:${REGION}:lambda:path/2015-03-31/functions/${arn}/invocations`),
 }, {
     dependsOn: [ method ],
     provider: awsProvider,
@@ -185,10 +188,10 @@ const integration = new aws.apigateway.Integration(`${config.name}-api-integrati
 // Deploy RestApi
 ///////////////////
 
-const deployment = new aws.apigateway.Deployment(`${config.name}-api-deployment`, {
+const deployment = new aws.apigateway.Deployment(`${NAME}-api-deployment`, {
     restApi: restApi,
-    description: `${config.name} deployment`,
-    stageName: process.env.STAGE,
+    description: `${NAME} deployment`,
+    stageName: STAGE,
 }, {
     dependsOn: [ integration ],
     provider: awsProvider,
@@ -199,9 +202,9 @@ const deployment = new aws.apigateway.Deployment(`${config.name}-api-deployment`
 ////////////////////////////////////////
 
 // Note: Lambda permission is only required when deploying to AWS cloud
-if (process.env.STAGE == "prod") {
+if (STAGE == "prod") {
     // Give permissions from API Gateway to invoke the Lambda
-    let invokePermission = new aws.lambda.Permission(`${config.name}-api-lambda-permission`, {
+    let invokePermission = new aws.lambda.Permission(`${NAME}-api-lambda-permission`, {
         action: "lambda:invokeFunction",
         function: lambda,
         principal: "apigateway.amazonaws.com",
@@ -217,10 +220,10 @@ if (process.env.STAGE == "prod") {
 
 let endpoint;
 
-if (process.env.STAGE == "dev") {
-    endpoint = restApi.id.promise().then(() => restApi.id.apply(id => `http://localhost:4567/restapis/${id}/${process.env.STAGE}/_user_request_/${path}`));
+if (STAGE == "dev") {
+    endpoint = restApi.id.promise().then(() => restApi.id.apply(id => `http://localhost:4567/restapis/${id}/${process.env.STAGE}/_user_request_/${PATH}`));
 } else {
-    endpoint = deployment.invokeUrl.apply(url => url + `/${path}`);
+    endpoint = deployment.invokeUrl.apply(url => url + `/${PATH}`);
 }
 
 exports.endpoint = endpoint;

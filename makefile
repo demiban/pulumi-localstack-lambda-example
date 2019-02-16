@@ -1,19 +1,10 @@
 SHELL := /bin/bash
 HANDLER_DIR := handler
 
-$(shell yaml2json Pulumi.yaml > conf.json)
-CONF := conf.json
-
-
-define GetConf
-$(shell node -p "require('./$(CONF)').$(1)")
-endef
-
 ifneq (,$(wildcard ./.env))
 include .env
 endif
 
-APP_NAME := $(call GetConf,name)
 STACK := $(APP_NAME)-$(STAGE)
 
 all: setup build up

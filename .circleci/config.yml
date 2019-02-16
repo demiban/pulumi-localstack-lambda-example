@@ -14,4 +14,4 @@ jobs:
           command: |
             make all
       - pulumi/update:
-          stack: localstack-demo-'${STAGE}'
+          stack: '${APP_NAME}-${STAGE}'
