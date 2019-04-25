@@ -67,8 +67,15 @@ Run `$ make destroy`
 
 ### Configuration
 
-To change the deployment stage open `config/deploy-config.json` and change
-the value of `"stage": "dev"` to `"stage": "prod"` to deploy the application to
-the cloud.
+1. Create the `.env` with the following variables:
+```bash
+export APP_NAME=localstack-demo
+export REGION=us-east-1
+export STAGE=dev
+export STACK=${APP_NAME}-${STAGE}
+export LS_VERSION=latest
+```
+
+To deploy to AWS just change the `STAGE` value to `prod`
 
 

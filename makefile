@@ -1,11 +1,12 @@
 SHELL := /bin/bash
-HANDLER_DIR := handler
+SUBDIRS := $(dir $(wildcard */makefile))
+
+.PHONY:all setup deploy destroy up down clean stop-all remove-all
+.PHONY: build $(SUBDIRS)
 
 ifneq (,$(wildcard ./.env))
 include .env
 endif
-
-STACK := $(APP_NAME)-$(STAGE)
 
 all: setup build up
 
@@ -23,19 +24,15 @@ setup:
 		npm install; \
 	fi
 
-	@docker pull localstack/localstack:0.8.8;
+	@docker pull localstack/localstack:$(LS_VERSION);
 
 	pulumi stack init $(STACK) || pulumi stack select $(STACK)
 
 	pulumi config set aws:region $(REGION);
 
-build:
-	@cd $(HANDLER_DIR); \
-	for F in ./*.js; do \
-		var="$${F%.js}"; \
-		zip $$var.zip $$F; \
-	done
-
+build: $(SUBDIRS)
+$(SUBDIRS):
+	@$(MAKE) -C $@ build
 deploy:
 	pulumi up -y -s $(STACK);
 

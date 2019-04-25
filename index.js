@@ -1,5 +1,6 @@
 const pulumi = require("@pulumi/pulumi");
 const aws = require("@pulumi/aws");
+const endpoints = require('./localstack-endpoints.json');
 require('dotenv').config();
 
 const PATH = "mypath"
@@ -25,17 +26,25 @@ if (STAGE == "prod") {
         secretKey: "mockSecretKey",
         region: REGION,
         endpoints: [{
-            apigateway: "http://localhost:4567",
-            cloudformation: "http://localhost:4581",
-            cloudwatch: "http://localhost:4582",
-            dynamodb: "http://localhost:4569",
-            es: "http://localhost:4578",
-            kinesis: "http://localhost:4568",
-            lambda: "http://localhost:4574",
-            s3: "http://localhost:4572",
-            sqs: "http://localhost:4576",
-            sns: "http://localhost:4575",
-            ssm: "http://localhost:4583"
+            apigateway: endpoints.APIGateway,
+            cloudformation: endpoints.CloudFormation,
+            cloudwatch: endpoints.CloudWatch,
+            cloudwatchlogs: endpoints.CloudWatchLogs,
+            dynamodb: endpoints.DynamoDB,
+            es: endpoints.ES,
+            firehose: endpoints.Firehose,
+            iam: endpoints.IAM,
+            kinesis: endpoints.Kinesis,
+            kms: endpoints.KMS,
+            lambda: endpoints.Lambda,
+            r53: endpoints.Route53,
+            redshift: endpoints.Redshift,
+            s3: endpoints.S3,
+            ses: endpoints.SES,
+            sns: endpoints.SNS,
+            sqs: endpoints.SQS,
+            ssm: endpoints.SSM,
+            sts: endpoints.STS,
         }],
     })
 }
@@ -61,31 +70,32 @@ const policy = {
 ////////////////////
 // Create IAM Role
 ////////////////////
-
-const role = new aws.iam.Role(`${NAME}-lambda-role`, {
-    assumeRolePolicy: JSON.stringify(policy),
- }, {
- //provider: awsProvider,
-});
+// Todo:    Use localstack IAM once time format bug gets fixed
+//          Issue: https://github.com/localstack/localstack/issues/1208
+const role = new aws.iam.Role(
+    `${NAME}-lambda-role`,
+    { assumeRolePolicy: JSON.stringify(policy),},
+    // { provider: awsProvider,}
+);
 
 ///////////////////////////
 // Create IAM Role Policy
 ///////////////////////////
 
-const fullAccess = new aws.iam.RolePolicyAttachment(`${NAME}-lambda-access`, {
-    role: role,
-    policyArn: aws.iam.AWSLambdaFullAccess,
-}, {
-//    provider: awsProvider,
-});
+const fullAccess = new aws.iam.RolePolicyAttachment(
+    `${NAME}-lambda-access`,
+    { role: role,
+            policyArn: aws.iam.AWSLambdaFullAccess,},
+    // {provider: awsProvider,}
+    );
 
 //////////////////
 // Create Lambda
 //////////////////
 
-const lambda = new aws.lambda.Function( `${NAME}-lambda`, {
+const lambdaNode = new aws.lambda.Function( `${NAME}-lambda-node`, {
     runtime: aws.lambda.NodeJS6d10Runtime,
-    code: new pulumi.asset.FileArchive("./handler/handler.zip"),
+    code: new pulumi.asset.FileArchive("./node/handler.zip"),
     timeout: 5,
     handler: "handler.handler",
     role: role.arn,
@@ -93,6 +103,19 @@ const lambda = new aws.lambda.Function( `${NAME}-lambda`, {
     provider: awsProvider,
     dependsOn: fullAccess,
 });
+
+// Todo: Resolve go runtime issue with localstack lambda container
+//       Reference: https://github.com/localstack/localstack/issues/561
+// const lambdaGo = new aws.lambda.Function( `${NAME}-lambda-go`, {
+//     runtime: aws.lambda.Go1dxRuntime,
+//     code: new pulumi.asset.FileArchive("./golang/main.zip"),
+//     timeout: 5,
+//     handler: "main",
+//     role: role.arn,
+// }, {
+//     provider: awsProvider,
+//     dependsOn: fullAccess,
+// });
 
 /////////////////////
 // Setup APIGATEWAY
@@ -176,7 +199,7 @@ const integration = new aws.apigateway.Integration(`${NAME}-api-integration`, {
     type: "AWS_PROXY",
     integrationHttpMethod: "POST",
     passthroughBehavior: "WHEN_NO_MATCH",
-    uri: lambda.arn.apply(arn =>
+    uri: lambdaNode.arn.apply(arn =>
         arn && `arn:aws:apigateway:${REGION}:lambda:path/2015-03-31/functions/${arn}/invocations`),
 }, {
     dependsOn: [ method ],
@@ -205,7 +228,7 @@ if (STAGE == "prod") {
     // Give permissions from API Gateway to invoke the Lambda
     let invokePermission = new aws.lambda.Permission(`${NAME}-api-lambda-permission`, {
         action: "lambda:invokeFunction",
-        function: lambda,
+        function: lambdaNode,
         principal: "apigateway.amazonaws.com",
         sourceArn: deployment.executionArn.apply(arn => arn + "*/*"),
     }, {
@@ -222,7 +245,9 @@ let endpoint;
 if (STAGE == "prod") {
     endpoint = deployment.invokeUrl.apply(url => url + `/${PATH}`);
 } else{
-    endpoint = restApi.id.promise().then(() => restApi.id.apply(id => `http://localhost:4567/restapis/${id}/${process.env.STAGE}/_user_request_/${PATH}`));
+    endpoint = restApi.id.promise().then(
+        () => restApi.id.apply(id => `http://localhost:4567/restapis/${id}/${process.env.STAGE}/_user_request_/${PATH}`)
+    );
 }
 
 exports.endpoint = endpoint;
