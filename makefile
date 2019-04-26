@@ -8,7 +8,7 @@ ifneq (,$(wildcard ./.env))
 include .env
 endif
 
-all: setup build up
+all: setup build
 
 setup:
 	@if not [ "$(hash brew)" 2>/dev/null ]; then \

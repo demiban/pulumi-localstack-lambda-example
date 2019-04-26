@@ -37,7 +37,7 @@ if (STAGE == "prod") {
             kinesis: endpoints.Kinesis,
             kms: endpoints.KMS,
             lambda: endpoints.Lambda,
-            r53: endpoints.Route53,
+            route53: endpoints.Route53,
             redshift: endpoints.Redshift,
             s3: endpoints.S3,
             ses: endpoints.SES,
@@ -93,16 +93,16 @@ const fullAccess = new aws.iam.RolePolicyAttachment(
 // Create Lambda
 //////////////////
 
-const lambdaNode = new aws.lambda.Function( `${NAME}-lambda-node`, {
-    runtime: aws.lambda.NodeJS6d10Runtime,
-    code: new pulumi.asset.FileArchive("./node/handler.zip"),
-    timeout: 5,
-    handler: "handler.handler",
-    role: role.arn,
-}, {
-    provider: awsProvider,
-    dependsOn: fullAccess,
-});
+const lambdaNode = new aws.lambda.Function(
+    `${NAME}-lambda-node`,
+    { runtime: aws.lambda.NodeJS6d10Runtime,
+            code: new pulumi.asset.FileArchive("./node/handler.zip"),
+            timeout: 5,
+            handler: "handler.handler",
+            role: role.arn,},
+    { provider: awsProvider,
+            dependsOn: fullAccess,}
+);
 
 // Todo: Resolve go runtime issue with localstack lambda container
 //       Reference: https://github.com/localstack/localstack/issues/561
@@ -143,81 +143,82 @@ const lambdaNode = new aws.lambda.Function( `${NAME}-lambda-node`, {
 // TODO:    Use this fucntion to deploy the RESTApi once pulumi releases the updated
 //          version that enables to pass the provider has an argument.
 //          This will simplify the implementation.
-// let api = new aws.apigateway.x.API(`${NAME}-api`, {
-//     routes: [{
-//         path: `/${PATH}`,
-//         method: "GET",
-//         eventHandler: lambda
-//     }],
-// }, {
-//     provider: awsProvider,
-// });
+// let restApi = new aws.apigateway.x.API(
+//     `${NAME}-api`,
+//     { routes: [{
+//                 path: `/${PATH}`,
+//                 method: "GET",
+//                 eventHandler: lambdaNode
+//             }],},
+//     { provider: awsProvider,}
+// );
 
 //////////////////////
 // Create APIGATEWAY
 //////////////////////
 
-let restApi = new aws.apigateway.RestApi(`${NAME}-api`, {
-    body: "",
-}, {
-    provider: awsProvider,
-});
+let restApi = new aws.apigateway.RestApi(
+    `${NAME}-api`,
+    { body: "",},
+    { provider: awsProvider,}
+);
 
 ////////////////////////////
 // Create RestApi Resource
 ////////////////////////////
 
-const resource = new aws.apigateway.Resource(`${NAME}-api-resource`, {
-    restApi: restApi,
-    pathPart: `${PATH}`,
-    parentId: restApi.rootResourceId,
-}, {
-    provider: awsProvider,
-});
+const resource = new aws.apigateway.Resource(
+    `${NAME}-api-resource`,
+    { restApi: restApi,
+            pathPart: `${PATH}`,
+            parentId: restApi.rootResourceId,},
+    { provider: awsProvider,}
+);
 
 //////////////////////////
 // Create RestAPI Method
 //////////////////////////
 
-const method = new aws.apigateway.Method(`${NAME}-api-method`, {
-    restApi: restApi,
-    resourceId: resource.id,
-    httpMethod: "ANY",
-    authorization: "NONE",
-}, {
-    provider: awsProvider,
-});
+const method = new aws.apigateway.Method(
+    `${NAME}-api-method`,
+    { restApi: restApi,
+            resourceId: resource.id,
+            httpMethod: "ANY",
+            authorization: "NONE",},
+    { provider: awsProvider,}
+);
 
 ///////////////////////////////////
 // Set RestApi Lambda Integration
 ///////////////////////////////////
 
-const integration = new aws.apigateway.Integration(`${NAME}-api-integration`, {
-    restApi: restApi,
-    resourceId: resource.id,
-    httpMethod: "ANY",
-    type: "AWS_PROXY",
-    integrationHttpMethod: "POST",
-    passthroughBehavior: "WHEN_NO_MATCH",
-    uri: lambdaNode.arn.apply(arn =>
-        arn && `arn:aws:apigateway:${REGION}:lambda:path/2015-03-31/functions/${arn}/invocations`),
-}, {
-    dependsOn: [ method ],
-    provider: awsProvider,
-});
+const integration = new aws.apigateway.Integration(
+    `${NAME}-api-integration`,
+    { restApi: restApi,
+            resourceId: resource.id,
+            httpMethod: "ANY",
+            type: "AWS_PROXY",
+            integrationHttpMethod: "POST",
+            passthroughBehavior: "WHEN_NO_MATCH",
+            uri: lambdaNode.arn.apply(
+                arn => arn && `arn:aws:apigateway:${REGION}:lambda:path/2015-03-31/functions/${arn}/invocations`
+            ),},
+    { dependsOn: [ method ],
+            provider: awsProvider,}
+);
 
 ///////////////////
 // Deploy RestApi
 ///////////////////
 
-const deployment = new aws.apigateway.Deployment(`${NAME}-api-deployment`, {
-    restApi: restApi,
-    description: `${NAME} deployment`,
-    stageName: STAGE,
-}, {
-    dependsOn: [ integration ],
-    provider: awsProvider,
-});
+const deployment = new aws.apigateway.Deployment(
+    `${NAME}-api-deployment`,
+    { restApi: restApi,
+            description: `${NAME} deployment`,
+            stageName: STAGE,},
+    { dependsOn: [ integration ],
+            provider: awsProvider,}
+);
 
 ////////////////////////////////////////
 // Create Lambda APIGATEWAY Permission
@@ -226,14 +227,14 @@ const deployment = new aws.apigateway.Deployment(`${NAME}-api-deployment`, {
 // Note: Lambda permission is only required when deploying to AWS cloud
 if (STAGE == "prod") {
     // Give permissions from API Gateway to invoke the Lambda
-    let invokePermission = new aws.lambda.Permission(`${NAME}-api-lambda-permission`, {
-        action: "lambda:invokeFunction",
-        function: lambdaNode,
-        principal: "apigateway.amazonaws.com",
-        sourceArn: deployment.executionArn.apply(arn => arn + "*/*"),
-    }, {
-        provider: awsProvider,
-    });
+    let invokePermission = new aws.lambda.Permission(
+        `${NAME}-api-lambda-permission`,
+        { action: "lambda:invokeFunction",
+                function: lambdaNode,
+                principal: "apigateway.amazonaws.com",
+                sourceArn: deployment.executionArn.apply(arn => arn + "*/*"),},
+        { provider: awsProvider,}
+    );
 }
 
 //////////////////////////////////

@@ -7,7 +7,7 @@ services:
       - "4567-4593:4567-4593"
       - "${PORT_WEB_UI-8080}:${PORT_WEB_UI-8080}"
     environment:
-      - SERVICES=${SERVICES- apigateway,lambda,iam,sts}
+      - SERVICES=${SERVICES- apigateway,lambda,iam,sts,dynamodb}
       - DEBUG=${DEBUG- }
       - DATA_DIR=${DATA_DIR- }
       - PORT_WEB_UI=${PORT_WEB_UI- }

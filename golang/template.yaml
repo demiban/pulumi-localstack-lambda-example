@@ -1,0 +1,14 @@
+AWSTemplateFormatVersion : '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: A simple Hello World Serverless project
+Resources:
+  main:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: go1.x
+      Handler: main
+      CodeUri: .
+      Timeout: 5
+      Environment:
+        Variables:
+          SECRgit ET_KEY_TO_CALL_THIS_LAMBDA: "35c760f4-b3dc-4657-b4f3-2c6566d4f42e" # Replace this with your token
