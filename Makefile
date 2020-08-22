@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-SUBDIRS := $(dir $(wildcard */makefile))
+SUBDIRS := $(dir $(wildcard functions/*/Makefile))
 
 .PHONY:all setup deploy destroy up down clean stop-all remove-all
 .PHONY: build $(SUBDIRS)
@@ -8,7 +8,7 @@ ifneq (,$(wildcard ./.env))
 include .env
 endif
 
-all: setup build
+all: setup init build
 
 setup:
 	@if not [ "$(hash brew)" 2>/dev/null ]; then \
@@ -20,28 +20,29 @@ setup:
 	fi
 
 	@if [ ! -d "node_modules" ]; then \
-		npm config set loglevel warn; \
-		npm install; \
+		yarn install; \
 	fi
-
-	@docker pull localstack/localstack:$(LS_VERSION);
-
-	pulumi stack init $(STACK) || pulumi stack select $(STACK)
-
-	pulumi config set aws:region $(REGION);
 
 build: $(SUBDIRS)
 $(SUBDIRS):
 	@$(MAKE) -C $@ build
-deploy:
-	pulumi up -y -s $(STACK);
+
+init:
+	pulumi stack init $(STAGE) || pulumi stack select $(STAGE)
+
+	pulumi config set aws:region $(REGION);
+
+deploy: build
+	pulumi up -y -s $(STAGE);
 
 destroy:
-	-pulumi destroy -y -s $(STACK)
+	-pulumi destroy -y -s $(STAGE)
 
-	-pulumi stack rm -f -y -s $(STACK)
+rm: destroy
+	-pulumi stack rm -f -y -s $(STAGE)
 
 up:
+	@docker pull localstack/localstack:$(LS_VERSION);
 	TMPDIR=/private$(TMPDIR) docker-compose up -d;
 
 down:

@@ -5,10 +5,10 @@ Resources:
   main:
     Type: AWS::Serverless::Function
     Properties:
-      Runtime: go1.x
-      Handler: main
+      Runtime: nodejs6.10
+      Handler: handler.handler
       CodeUri: .
-      Timeout: 5
+      Timeout: 300
       Environment:
         Variables:
-          SECRgit ET_KEY_TO_CALL_THIS_LAMBDA: "35c760f4-b3dc-4657-b4f3-2c6566d4f42e" # Replace this with your token
+           # Replace this with your token

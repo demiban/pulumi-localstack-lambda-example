@@ -6,6 +6,8 @@ jobs:
     docker:
       - image: circleci/node:7.10
       - image: localstack/localstack:${LS_VERSION}
+      - image: lambci/lambda:go1.x
+      - image: lambci/lambda:nodejs6.10
     working_directory: ~/repo
     steps:
       - checkout

@@ -4,7 +4,9 @@
   "description": "Example project for deploying aws serverless lambda to localstack",
   "main": "index.js",
   "scripts": {
-    "test": "./deploy.sh"
+    "build": "make all",
+    "deploy": "make deploy",
+    "test": "make test"
   },
   "repository": {
     "type": "git",
@@ -15,6 +17,7 @@
     "localstack",
     "node.js",
     "aws",
+    "golang",
     "lambda",
     "test"
   ],
@@ -25,9 +28,21 @@
   },
   "homepage": "https://github.com/demiban/pulumi-localstack-lambda-example#readme",
   "dependencies": {
-    "@pulumi/aws": "^0.16.10",
-    "@pulumi/cloud-aws": "^0.18.0",
+    "@pulumi/aws": "^1.1.0",
+    "@pulumi/awsx": "^0.18.10",
+    "@pulumi/pulumi": "^1.0.0",
     "dotenv": "^6.2.0",
     "mime": "^2.4.0"
+  },
+  "devDependencies": {
+    "eslint": "6.1.0",
+    "eslint-config-airbnb": "18.0.1",
+    "eslint-config-prettier": "^6.5.0",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-jsx-a11y": "^6.2.3",
+    "eslint-plugin-prettier": "^3.1.1",
+    "eslint-plugin-react": "^7.14.3",
+    "eslint-plugin-react-hooks": "^1.7.0",
+    "prettier": "^1.18.2"
   }
 }

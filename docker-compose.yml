@@ -1,18 +1,21 @@
-version: '2.1'
+version: "2.1"
 
 services:
   localstack:
     image: "localstack/localstack:${LS_VERSION}"
     ports:
-      - "4567-4593:4567-4593"
+      - "4567-4601:4567-4601"
       - "${PORT_WEB_UI-8080}:${PORT_WEB_UI-8080}"
     environment:
-      - SERVICES=${SERVICES- apigateway,lambda,iam,sts,dynamodb}
+      - SERVICES=${SERVICES- apigateway,lambda,iam}
       - DEBUG=${DEBUG- }
       - DATA_DIR=${DATA_DIR- }
       - PORT_WEB_UI=${PORT_WEB_UI- }
-      - LAMBDA_EXECUTOR=${LAMBDA_EXECUTOR- docker}
+      - LAMBDA_EXECUTOR=${LAMBDA_EXECUTOR- docker-reuse}
+      - LAMBDA_REMOTE_DOCKER=${LAMBDA_REMOTE_DOCKER- false}
+      - LAMBDA_DOCKER_NETWORK=${LAMBDA_DOCKER_NETWORK- host}
       - KINESIS_ERROR_PROBABILITY=${KINESIS_ERROR_PROBABILITY- }
+      - TEST_AWS_ACCOUNT_ID=${AWS_ACCOUNT_ID} # Pass your AWS account id so Pulumi provider can find your account when creating localstack provider
       - DOCKER_HOST=unix:///var/run/docker.sock
     volumes:
       - "${TMPDIR:-/tmp/localstack}:/tmp/localstack"

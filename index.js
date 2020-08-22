@@ -1,256 +1,387 @@
-const pulumi = require("@pulumi/pulumi");
-const aws = require("@pulumi/aws");
-const endpoints = require('./localstack-endpoints.json');
 require('dotenv').config();
+const pulumi = require('@pulumi/pulumi');
+const aws = require('@pulumi/aws');
+const awsx = require('@pulumi/awsx');
+const endpoints = require('./config/localstack-endpoints.json');
 
-const PATH = "mypath"
-const STAGE = process.env.STAGE
-const REGION = process.env.REGION
-const NAME = process.env.APP_NAME
+const name = pulumi.getProject();
+const stage = process.env.STAGE;
+const region = process.env.REGION;
 
-////////////////////////
+//------------------------------------------------------------------------------
 // Create AWS Provider
-////////////////////////
-
-let awsProvider;
+//------------------------------------------------------------------------------
 
 // Create the aws provider depending the stage of deployment
-if (STAGE == "prod") {
-    awsProvider = new aws.Provider("aws", { region: REGION });
+let provider;
+if (stage === 'local') {
+  provider = new aws.Provider('localstack', {
+    skipCredentialsValidation: true,
+    skipMetadataApiCheck: true,
+    skipRegionValidation: true,
+    skipRequestingAccountId: true,
+    skipGetEc2Platforms: true,
+    s3ForcePathStyle: true,
+    insecure: true,
+    accessKey: 'mockAccessKey',
+    secretKey: 'mockSecretKey',
+    maxRetries: 5,
+    region,
+    endpoints: [
+      {
+        apigateway: endpoints.APIGateway,
+        cloudformation: endpoints.CloudFormation,
+        cloudwatch: endpoints.CloudWatch,
+        cloudwatchlogs: endpoints.CloudWatchLogs,
+        cognitoidentity: endpoints.CognitoIdendity,
+        dynamodb: endpoints.DynamoDB,
+        ec2: endpoints.EC2,
+        ecs: endpoints.ECS,
+        elasticache: endpoints.ElasticCache,
+        es: endpoints.ES,
+        firehose: endpoints.Firehose,
+        iam: endpoints.IAM,
+        iot: endpoints.IoT,
+        kinesis: endpoints.Kinesis,
+        kms: endpoints.KMS,
+        lambda: endpoints.Lambda,
+        rds: endpoints.RDS,
+        route53: endpoints.Route53,
+        redshift: endpoints.Redshift,
+        s3: endpoints.S3,
+        secretsmanager: endpoints.SecretsManager,
+        ses: endpoints.SES,
+        sns: endpoints.SNS,
+        sqs: endpoints.SQS,
+        ssm: endpoints.SSM,
+        stepfunctions: endpoints.StepFunctions,
+        sts: endpoints.STS
+      }
+    ]
+  });
 } else {
-    awsProvider = new aws.Provider("localstack", {
-        skipCredentialsValidation: true,
-        skipMetadataApiCheck: true,
-        s3ForcePathStyle: true,
-        accessKey: "mockAccessKey",
-        secretKey: "mockSecretKey",
-        region: REGION,
-        endpoints: [{
-            apigateway: endpoints.APIGateway,
-            cloudformation: endpoints.CloudFormation,
-            cloudwatch: endpoints.CloudWatch,
-            cloudwatchlogs: endpoints.CloudWatchLogs,
-            dynamodb: endpoints.DynamoDB,
-            es: endpoints.ES,
-            firehose: endpoints.Firehose,
-            iam: endpoints.IAM,
-            kinesis: endpoints.Kinesis,
-            kms: endpoints.KMS,
-            lambda: endpoints.Lambda,
-            route53: endpoints.Route53,
-            redshift: endpoints.Redshift,
-            s3: endpoints.S3,
-            ses: endpoints.SES,
-            sns: endpoints.SNS,
-            sqs: endpoints.SQS,
-            ssm: endpoints.SSM,
-            sts: endpoints.STS,
-        }],
-    })
+  provider = new aws.Provider('aws', { region });
 }
 
-//////////////////////////
+//------------------------------------------------------------------------------
 // Setup Lambda IAM role
-//////////////////////////
+//------------------------------------------------------------------------------
 
 const policy = {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Action": "sts:AssumeRole",
-            "Principal": {
-                "Service": "lambda.amazonaws.com",
-            },
-            "Effect": "Allow",
-            "Sid": "",
-        },
-    ],
+  Version: '2012-10-17',
+  Statement: [
+    {
+      Action: 'sts:AssumeRole',
+      Principal: {
+        Service: 'lambda.amazonaws.com'
+      },
+      Effect: 'Allow',
+      Sid: ''
+    }
+  ]
 };
 
-////////////////////
+//------------------------------------------------------------------------------
 // Create IAM Role
-////////////////////
-// Todo:    Use localstack IAM once time format bug gets fixed
-//          Issue: https://github.com/localstack/localstack/issues/1208
+//------------------------------------------------------------------------------
 const role = new aws.iam.Role(
-    `${NAME}-lambda-role`,
-    { assumeRolePolicy: JSON.stringify(policy),},
-    // { provider: awsProvider,}
+  `${name}-lambda-role`,
+  {
+    assumeRolePolicy: JSON.stringify(policy),
+    tags: {
+      Environment: stage
+    }
+  },
+  {
+    provider
+  }
 );
 
-///////////////////////////
+//------------------------------------------------------------------------------
 // Create IAM Role Policy
-///////////////////////////
+//------------------------------------------------------------------------------
 
 const fullAccess = new aws.iam.RolePolicyAttachment(
-    `${NAME}-lambda-access`,
-    { role: role,
-            policyArn: aws.iam.AWSLambdaFullAccess,},
-    // {provider: awsProvider,}
-    );
+  `${name}-lambda-access`,
+  {
+    role,
+    policyArn: aws.iam.AWSLambdaFullAccess,
+    tags: {
+      Environment: stage
+    }
+  },
+  {
+    provider
+  }
+);
 
-//////////////////
+//------------------------------------------------------------------------------
 // Create Lambda
-//////////////////
+//------------------------------------------------------------------------------
 
 const lambdaNode = new aws.lambda.Function(
-    `${NAME}-lambda-node`,
-    { runtime: aws.lambda.NodeJS6d10Runtime,
-            code: new pulumi.asset.FileArchive("./node/handler.zip"),
-            timeout: 5,
-            handler: "handler.handler",
-            role: role.arn,},
-    { provider: awsProvider,
-            dependsOn: fullAccess,}
+  `${name}-lambda-node`,
+  {
+    runtime: aws.lambda.NodeJS10dXRuntime,
+    code: new pulumi.asset.FileArchive('./functions/node/handler.zip'),
+    timeout: 300,
+    handler: 'handler.handler',
+    role: role.arn,
+    publish: true,
+    tags: {
+      Environment: stage
+    }
+  },
+  {
+    provider,
+    dependsOn: fullAccess
+  }
 );
 
-// Todo: Resolve go runtime issue with localstack lambda container
-//       Reference: https://github.com/localstack/localstack/issues/561
-// const lambdaGo = new aws.lambda.Function( `${NAME}-lambda-go`, {
-//     runtime: aws.lambda.Go1dxRuntime,
-//     code: new pulumi.asset.FileArchive("./golang/main.zip"),
-//     timeout: 5,
-//     handler: "main",
-//     role: role.arn,
-// }, {
-//     provider: awsProvider,
-//     dependsOn: fullAccess,
-// });
+const lambdaGo = new aws.lambda.Function(
+  `${name}-lambda-go`,
+  {
+    runtime: aws.lambda.Go1dxRuntime,
+    code: new pulumi.asset.FileArchive('./functions/golang/main.zip'),
+    timeout: 300,
+    handler: 'main',
+    role: role.arn,
+    publish: true,
+    tags: {
+      Environment: stage
+    }
+  },
+  {
+    provider,
+    dependsOn: fullAccess
+  }
+);
 
-/////////////////////
+//------------------------------------------------------------------------------
 // Setup APIGATEWAY
-/////////////////////
+//------------------------------------------------------------------------------
 
-// The following creates a REST API equivalent to the following Swagger specification:
-//
-//    {
-//      swagger: "2.0",
-//      info: { title: "localstack-demo-api", version: "1.0" },
-//      paths: {
-//        "/mypath": {
-//          "x-amazon-apigateway-any-method": {
-//            "x-amazon-apigateway-integration": {
-//              uri: ,
-//              passthroughBehavior: "when_no_match",
-//              httpMethod: "POST",
-//              type: "aws_proxy",
-//            },
-//          },
-//        },
-//      },
-//    };
-
-// TODO:    Use this fucntion to deploy the RESTApi once pulumi releases the updated
+// TODO:    Use this function to deploy the RESTApi once pulumi releases the updated
 //          version that enables to pass the provider has an argument.
 //          This will simplify the implementation.
-// let restApi = new aws.apigateway.x.API(
-//     `${NAME}-api`,
-//     { routes: [{
-//                 path: `/${PATH}`,
-//                 method: "GET",
-//                 eventHandler: lambdaNode
-//             }],},
-//     { provider: awsProvider,}
+
+const restApi = new awsx.apigateway.API(
+  `${name}-api-new`,
+  {
+    routes: [
+      {
+        path: `/nodejs`,
+        method: 'ANY',
+        eventHandler: lambdaNode,
+        apiKeyRequired: false
+      },
+      {
+        path: `/golang`,
+        method: 'ANY',
+        eventHandler: lambdaGo,
+        apiKeyRequired: false
+      }
+    ],
+    stageName: stage,
+    restApiArgs: {
+      body: ''
+    },
+    tags: {
+      Environment: stage
+    }
+  },
+  {
+    provider
+  }
+);
+
+//------------------------------------------------------------------------------
+// Create APIGATEWAY
+//------------------------------------------------------------------------------
+
+// const restApi = new aws.apigateway.RestApi(
+//   `${name}-api`,
+//   {
+//     body: '',
+//     tags: {
+//       Environment: stage
+//     }
+//   },
+//   { provider }
 // );
 
-//////////////////////
-// Create APIGATEWAY
-//////////////////////
+// // ------------------------------------------------------------------------------
+// // Create RestApi Resource
+// // ------------------------------------------------------------------------------
 
-let restApi = new aws.apigateway.RestApi(
-    `${NAME}-api`,
-    { body: "",},
-    { provider: awsProvider,}
-);
+// const resourceGo = new aws.apigateway.Resource(
+//   `${name}-api-resource-go`,
+//   {
+//     restApi,
+//     pathPart: `golang`,
+//     parentId: restApi.rootResourceId,
+//     tags: {
+//       Environment: stage
+//     }
+//   },
+//   { provider }
+// );
 
-////////////////////////////
-// Create RestApi Resource
-////////////////////////////
+// const resourceNode = new aws.apigateway.Resource(
+//   `${name}-api-resource-node`,
+//   {
+//     restApi,
+//     pathPart: `node`,
+//     parentId: restApi.rootResourceId,
+//     tags: {
+//       Environment: stage
+//     }
+//   },
+//   { provider }
+// );
 
-const resource = new aws.apigateway.Resource(
-    `${NAME}-api-resource`,
-    { restApi: restApi,
-            pathPart: `${PATH}`,
-            parentId: restApi.rootResourceId,},
-    { provider: awsProvider,}
-);
+// // ------------------------------------------------------------------------------
+// // Create RestAPI Method
+// // ------------------------------------------------------------------------------
 
-//////////////////////////
-// Create RestAPI Method
-//////////////////////////
+// const methodGo = new aws.apigateway.Method(
+//   `${name}-api-method-go`,
+//   {
+//     restApi,
+//     resourceId: resourceGo.id,
+//     httpMethod: 'GET',
+//     authorization: 'NONE',
+//     tags: {
+//       Environment: stage
+//     }
+//   },
+//   { provider }
+// );
 
-const method = new aws.apigateway.Method(
-    `${NAME}-api-method`,
-    { restApi: restApi,
-            resourceId: resource.id,
-            httpMethod: "ANY",
-            authorization: "NONE",},
-    { provider: awsProvider,}
-);
+// const methodNode = new aws.apigateway.Method(
+//   `${name}-api-method-node`,
+//   {
+//     restApi,
+//     resourceId: resourceNode.id,
+//     httpMethod: 'GET',
+//     authorization: 'NONE',
+//     tags: {
+//       Environment: stage
+//     }
+//   },
+//   { provider }
+// );
 
-///////////////////////////////////
-// Set RestApi Lambda Integration
-///////////////////////////////////
+// // ------------------------------------------------------------------------------
+// // Set RestApi Lambda Integration
+// // ------------------------------------------------------------------------------
 
-const integration = new aws.apigateway.Integration(
-    `${NAME}-api-integration`,
-    { restApi: restApi,
-            resourceId: resource.id,
-            httpMethod: "ANY",
-            type: "AWS_PROXY",
-            integrationHttpMethod: "POST",
-            passthroughBehavior: "WHEN_NO_MATCH",
-            uri: lambdaNode.arn.apply(
-                arn => arn && `arn:aws:apigateway:${REGION}:lambda:path/2015-03-31/functions/${arn}/invocations`
-            ),},
-    { dependsOn: [ method ],
-            provider: awsProvider,}
-);
+// const integrationGo = new aws.apigateway.Integration(
+//   `${name}-api-integration-go`,
+//   {
+//     restApi,
+//     resourceId: resourceGo.id,
+//     httpMethod: 'ANY',
+//     type: 'AWS_PROXY',
+//     integrationHttpMethod: 'POST',
+//     passthroughBehavior: 'WHEN_NO_MATCH',
+//     uri: lambdaGo.arn.apply(
+//       arn =>
+//         arn &&
+//         `arn:aws:apigateway:${region}:lambda:path/2015-03-31/functions/${arn}/invocations`
+//     ),
+//     tags: {
+//       Environment: stage
+//     }
+//   },
+//   { dependsOn: [methodGo], provider }
+// );
 
-///////////////////
-// Deploy RestApi
-///////////////////
+// const integrationNode = new aws.apigateway.Integration(
+//   `${name}-api-integration-node`,
+//   {
+//     restApi,
+//     resourceId: resourceNode.id,
+//     httpMethod: 'ANY',
+//     type: 'AWS_PROXY',
+//     integrationHttpMethod: 'POST',
+//     passthroughBehavior: 'WHEN_NO_MATCH',
+//     uri: lambdaNode.arn.apply(
+//       arn =>
+//         arn &&
+//         `arn:aws:apigateway:${region}:lambda:path/2015-03-31/functions/${arn}/invocations`
+//     ),
+//     tags: {
+//       Environment: stage
+//     }
+//   },
+//   { dependsOn: [methodNode], provider }
+// );
 
-const deployment = new aws.apigateway.Deployment(
-    `${NAME}-api-deployment`,
-    { restApi: restApi,
-            description: `${NAME} deployment`,
-            stageName: STAGE,},
-    { dependsOn: [ integration ],
-            provider: awsProvider,}
-);
+// // ------------------------------------------------------------------------------
+// // Deploy RestApi
+// // ------------------------------------------------------------------------------
 
-////////////////////////////////////////
-// Create Lambda APIGATEWAY Permission
-////////////////////////////////////////
+// const deployment = new aws.apigateway.Deployment(
+//   `${name}-api-deployment`,
+//   {
+//     restApi,
+//     description: `${name} deployment`,
+//     stageName: stage,
+//     tags: {
+//       Environment: stage
+//     }
+//   },
+//   { dependsOn: [integrationGo, integrationNode], provider }
+// );
 
-// Note: Lambda permission is only required when deploying to AWS cloud
-if (STAGE == "prod") {
-    // Give permissions from API Gateway to invoke the Lambda
-    let invokePermission = new aws.lambda.Permission(
-        `${NAME}-api-lambda-permission`,
-        { action: "lambda:invokeFunction",
-                function: lambdaNode,
-                principal: "apigateway.amazonaws.com",
-                sourceArn: deployment.executionArn.apply(arn => arn + "*/*"),},
-        { provider: awsProvider,}
-    );
-}
+// // ------------------------------------------------------------------------------
+// // Create Lambda APIGATEWAY Permission
+// // ------------------------------------------------------------------------------
 
-//////////////////////////////////
-// Export RestApi https endpoint
-//////////////////////////////////
+// // Note: Lambda permission is only required when deploying to AWS cloud
+// // Give permissions require( API Gateway to invoke the Lambda
+// if (stage !== 'development') {
+//   const invokePermissionGo = new aws.lambda.Permission(
+//     `${name}-api-lambda-permission`,
+//     {
+//       action: 'lambda:invokeFunction',
+//       function: lambdaGo,
+//       principal: 'apigateway.amazonaws.com',
+//       sourceArn: deployment.executionArn.apply(arn => `${arn}*/*/*`),
+//       tags: {
+//         Environment: stage
+//       }
+//     },
+//     { provider }
+//   );
 
-let endpoint;
+//   const invokePermissionNode = new aws.lambda.Permission(
+//     `${name}-api-lambda-permission`,
+//     {
+//       action: 'lambda:invokeFunction',
+//       function: lambdaNode,
+//       principal: 'apigateway.amazonaws.com',
+//       sourceArn: deployment.executionArn.apply(arn => `${arn}*/*/*`),
+//       tags: {
+//         Environment: stage
+//       }
+//     },
+//     { provider }
+//   );
+// }
+// //------------------------------------------------------------------------------
+// // Export RestAPI invoke urls
+// //------------------------------------------------------------------------------
 
-if (STAGE == "prod") {
-    endpoint = deployment.invokeUrl.apply(url => url + `/${PATH}`);
-} else{
-    endpoint = restApi.id.promise().then(
-        () => restApi.id.apply(id => `http://localhost:4567/restapis/${id}/${process.env.STAGE}/_user_request_/${PATH}`)
-    );
-}
+// let invokeURL;
 
-exports.endpoint = endpoint;
+// if (stage === 'development') {
+//   invokeURL = restApi.id.apply(
+//     id => `http://localhost:4567/restapis/${id}/${stage}/_user_request_/`
+//   );
+// } else {
+//   invokeURL = deployment.invokeUrl.apply(url => `${url}/`);
+// }
 
-
+// exports.invokeURL = invokeURL;
