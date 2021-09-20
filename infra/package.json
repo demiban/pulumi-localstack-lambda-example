@@ -1,0 +1,11 @@
+{
+    "name": "pulumi-localstack",
+    "devDependencies": {
+        "@types/node": "^14.14.6"
+    },
+    "dependencies": {
+        "@pulumi/pulumi": "^2.12.1",
+        "@pulumi/aws": "^3.11.0",
+        "@pulumi/awsx": "^0.22.0"
+    }
+}

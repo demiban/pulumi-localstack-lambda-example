@@ -4,9 +4,9 @@
   "description": "Example project for deploying aws serverless lambda to localstack",
   "main": "index.js",
   "scripts": {
-    "build": "make all",
-    "deploy": "make deploy",
-    "test": "make test"
+    "build": "npm run build:getName && npm run build:getAddress",
+    "build:getName": "ncc build functions/getName.js -m -e aws-sdk -o .build/getName",
+    "build:getAddress": "ncc build functions/getAddress.js -m -e aws-sdk -o .build/getAddress"
   },
   "repository": {
     "type": "git",
@@ -15,26 +15,23 @@
   "keywords": [
     "pulumi",
     "localstack",
-    "node.js",
+    "nodejs",
     "aws",
-    "golang",
     "lambda",
     "test"
   ],
   "author": "Demiban Diaz Torres",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/demiban/pulumi-localstack-lambda-example/issues"
   },
   "homepage": "https://github.com/demiban/pulumi-localstack-lambda-example#readme",
   "dependencies": {
-    "@pulumi/aws": "^1.1.0",
-    "@pulumi/awsx": "^0.18.10",
-    "@pulumi/pulumi": "^1.0.0",
     "dotenv": "^6.2.0",
     "mime": "^2.4.0"
   },
   "devDependencies": {
+    "@zeit/ncc": "^0.22.3",
     "eslint": "6.1.0",
     "eslint-config-airbnb": "18.0.1",
     "eslint-config-prettier": "^6.5.0",

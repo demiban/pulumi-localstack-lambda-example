@@ -1,14 +1,14 @@
-AWSTemplateFormatVersion : '2010-09-09'
+AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: A simple Hello World Serverless project
 Resources:
   main:
     Type: AWS::Serverless::Function
     Properties:
-      Runtime: nodejs6.10
+      Runtime: nodejs12.x
       Handler: handler.handler
       CodeUri: .
       Timeout: 300
       Environment:
         Variables:
-           # Replace this with your token
+          # Replace this with your token

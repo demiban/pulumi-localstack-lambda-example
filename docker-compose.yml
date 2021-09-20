@@ -1,22 +1,28 @@
-version: "2.1"
+version: '2.1'
 
 services:
   localstack:
-    image: "localstack/localstack:${LS_VERSION}"
+    container_name: '${LOCALSTACK_DOCKER_NAME-localstack_main}'
+    image: localstack/localstack
+    network_mode: bridge
     ports:
-      - "4567-4601:4567-4601"
-      - "${PORT_WEB_UI-8080}:${PORT_WEB_UI-8080}"
+      - '53:53'
+      - '443:443'
+      - '4510-4520:4510-4520'
+      - '4566-4620:4566-4620'
+      - '${PORT_WEB_UI-8080}:${PORT_WEB_UI-8080}'
     environment:
-      - SERVICES=${SERVICES- apigateway,lambda,iam}
+      - SERVICES=${SERVICES- apigateway,iam,lambda}
       - DEBUG=${DEBUG- }
       - DATA_DIR=${DATA_DIR- }
       - PORT_WEB_UI=${PORT_WEB_UI- }
-      - LAMBDA_EXECUTOR=${LAMBDA_EXECUTOR- docker-reuse}
-      - LAMBDA_REMOTE_DOCKER=${LAMBDA_REMOTE_DOCKER- false}
-      - LAMBDA_DOCKER_NETWORK=${LAMBDA_DOCKER_NETWORK- host}
+      - LAMBDA_EXECUTOR=${LAMBDA_EXECUTOR- }
+      - LAMBDA_REMOTE_DOCKER=${LAMBDA_REMOTE_DOCKER- }
+      - LAMBDA_DOCKER_NETWORK=${LAMBDA_DOCKER_NETWORK- }
       - KINESIS_ERROR_PROBABILITY=${KINESIS_ERROR_PROBABILITY- }
-      - TEST_AWS_ACCOUNT_ID=${AWS_ACCOUNT_ID} # Pass your AWS account id so Pulumi provider can find your account when creating localstack provider
       - DOCKER_HOST=unix:///var/run/docker.sock
+      - HOST_TMP_FOLDER=${TMPDIR}
+      - TEST_AWS_ACCOUNT_ID=${AWS_ACCOUNT_ID} # Pulumi provider can find your account when creating localstack provider
     volumes:
-      - "${TMPDIR:-/tmp/localstack}:/tmp/localstack"
-      - "/var/run/docker.sock:/var/run/docker.sock"
+      - '${TMPDIR:-/tmp/localstack}:/tmp/localstack'
+      - '/var/run/docker.sock:/var/run/docker.sock'

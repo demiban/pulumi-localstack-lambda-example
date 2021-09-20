@@ -1,7 +1,5 @@
-package-lock.json
-Pulumi.*.yaml
 *.zip
 node_modules
 .env
 .DS_Store
-main
+.build

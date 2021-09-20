@@ -23,26 +23,30 @@ setup:
 		yarn install; \
 	fi
 
-build: $(SUBDIRS)
-$(SUBDIRS):
-	@$(MAKE) -C $@ build
+build:
+	npm run build
+	
+infra-install:
+	@if [ ! -d "./infra/node_modules" ]; then \
+		cd infra && npm install; \
+	fi
 
-init:
-	pulumi stack init $(STAGE) || pulumi stack select $(STAGE)
+infra-preview: infra-install
+	cd infra && pulumi stack select ${AWS_ENV} && pulumi pre
 
-	pulumi config set aws:region $(REGION);
+infra-refresh: infra-install
+	cd infra && pulumi stack select ${AWS_ENV} && pulumi refresh
 
-deploy: build
-	pulumi up -y -s $(STAGE);
+infra-deploy: infra-install build
+	cd infra && pulumi stack select ${AWS_ENV} && pulumi up
 
-destroy:
-	-pulumi destroy -y -s $(STAGE)
+infra-destroy:
+	cd infra && pulumi stack select ${AWS_ENV} && pulumi destroy
 
-rm: destroy
-	-pulumi stack rm -f -y -s $(STAGE)
-
+infra-erase:
+	cd infra && pulumi stack select ${AWS_ENV} && pulumi stack rm -f
 up:
-	@docker pull localstack/localstack:$(LS_VERSION);
+	@docker pull localstack/localstack;
 	TMPDIR=/private$(TMPDIR) docker-compose up -d;
 
 down:
@@ -56,3 +60,11 @@ stop-all:
 
 remove-all:
 	docker rm $(docker ps -aq);
+
+invoke:
+	aws lambda invoke \
+		--region us-east-1 \
+		--function-name "pulumi-localstack-local-getName" \
+		--endpoint-url "http://localhost:4566" \
+		--no-verify-ssl \
+		output.log

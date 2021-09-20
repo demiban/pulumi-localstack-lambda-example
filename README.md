@@ -2,11 +2,19 @@
 
 Example project for deploying aws serverless lambda to localstack with pulumi.
 
+## TODO
+
+- Update readme with commands
+- Update local scripts
+- Add tips for configruation
+- Explain errors with managed iam roles
+- Add express server code for proxy infra example
+
 ## Setup
 
-### In the terminal run the following commands:
+### In the terminal run the following commands
 
-Install required packages 
+Install required packages
 `$ make setup`  
 
 Start localStack docker

@@ -1,0 +1,3 @@
+name: pulumi-localstack
+runtime: nodejs
+description: Example project for deploying aws serverless lambda to localstack

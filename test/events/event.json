@@ -1,5 +1,5 @@
 {
-  "body": "{ \"message\": \"Hello from Golang\"}",
+  "body": "{ \"message\": \"Hello from local\"}",
   "resource": "/{proxy+}",
   "requestContext": {
     "resourceId": "123456",
@@ -21,7 +21,7 @@
       "sourceIp": "127.0.0.1",
       "accountId": null
     },
-    "stage": "prod"
+    "stage": "local"
   },
   "queryStringParameters": {
     "foo": "bar"
